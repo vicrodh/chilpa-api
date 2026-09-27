@@ -16,7 +16,7 @@ set +x
 
 HERE=$(cd "$(dirname "$0")" && pwd)
 FILE=${CHILPA_SECRETS_FILE:-"$HERE/../../.env"}
-NAMES='LAST_FM_API_KEY LAST_FM_API_SHARED_SECRET'
+NAMES='LAST_FM_API_KEY LAST_FM_SHARED_SECRET'
 
 if [ ! -f "$FILE" ]; then
     echo "No secrets file at $FILE" >&2

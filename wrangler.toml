@@ -16,6 +16,6 @@ preview_urls = false
 
 # Secrets, never in this file. Chilpa's own Last.fm API account:
 # - LAST_FM_API_KEY
-# - LAST_FM_API_SHARED_SECRET
+# - LAST_FM_SHARED_SECRET
 # scripts/put-secrets.sh loads both from the owner's secrets file without
 # printing them; `npx wrangler secret put NAME` does it by hand.

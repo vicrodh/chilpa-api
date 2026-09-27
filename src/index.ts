@@ -13,7 +13,7 @@ import { json, logRequest, rateLimit } from './utils';
 export interface Env {
   // Chilpa's own Last.fm API account, set with `wrangler secret put`.
   LAST_FM_API_KEY?: string;
-  LAST_FM_API_SHARED_SECRET?: string;
+  LAST_FM_SHARED_SECRET?: string;
 }
 
 const SERVICE = 'Chilpa API Proxy';

@@ -31,7 +31,7 @@ sh test/smoke.sh                 # against the dev server
 ```sh
 npx wrangler login
 npx wrangler deploy              # first time: creates api.chilpa.app
-sh scripts/put-secrets.sh        # LAST_FM_API_KEY, LAST_FM_API_SHARED_SECRET
+sh scripts/put-secrets.sh        # LAST_FM_API_KEY, LAST_FM_SHARED_SECRET
 sh test/smoke.sh https://api.chilpa.app
 ```
 

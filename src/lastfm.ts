@@ -89,7 +89,7 @@ export async function handleLastFm(request: Request, env: Env, method: string): 
   }
 
   const apiKey = env.LAST_FM_API_KEY;
-  const secret = env.LAST_FM_API_SHARED_SECRET;
+  const secret = env.LAST_FM_SHARED_SECRET;
   if (!apiKey || !secret) {
     return json({ error: 'Last.fm is not configured' }, 503);
   }
