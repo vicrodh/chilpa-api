@@ -1,0 +1,21 @@
+# api.chilpa.app is the only address. Released Chilpa builds will carry it
+# written in the code, so it never changes; the worker behind it can.
+name = "chilpa-api-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-09-23"
+
+# The first deploy creates the DNS record and the certificate; chilpa.app
+# must be a zone on the same Cloudflare account.
+routes = [
+  { pattern = "api.chilpa.app", custom_domain = true }
+]
+
+# No second address a build could end up depending on.
+workers_dev = false
+preview_urls = false
+
+# Secrets, never in this file. Chilpa's own Last.fm API account:
+# - LAST_FM_API_KEY
+# - LAST_FM_API_SHARED_SECRET
+# scripts/put-secrets.sh loads both from the owner's secrets file without
+# printing them; `npx wrangler secret put NAME` does it by hand.
