@@ -14,8 +14,13 @@ routes = [
 workers_dev = false
 preview_urls = false
 
-# Secrets, never in this file. Chilpa's own Last.fm API account:
-# - LAST_FM_API_KEY
-# - LAST_FM_SHARED_SECRET
-# scripts/put-secrets.sh loads both from the owner's secrets file without
-# printing them; `npx wrangler secret put NAME` does it by hand.
+# Secrets, never in this file; Chilpa's own applications, named as in the
+# owner's secrets file:
+# - LAST_FM_API_KEY, LAST_FM_SHARED_SECRET
+# - DISCOGS_CLIENT_KEY, DISCOGS_CLIENT_SECRET
+# - MUSICBRAINZ_CLIENT_ID, MUSICBRAINZ_CLIENT_SECRET, MUSICBRAINZ_CALLBACK_URL
+# - SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
+# - TIDAL_CLIENT_ID, TIDAL_CLIENT_SECRET
+# scripts/put-secrets.sh loads them from that file without printing them;
+# `npx wrangler secret put NAME` does one by hand. A provider without its
+# secrets answers 503.

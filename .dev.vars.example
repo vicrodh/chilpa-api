@@ -1,3 +1,13 @@
-# Copy to .dev.vars (gitignored) for `npm run dev`.
-LAST_FM_API_KEY=your_last_fm_api_key
-LAST_FM_SHARED_SECRET=your_last_fm_shared_secret
+# Copy to .dev.vars (gitignored) for `npm run dev`. A provider left out
+# answers 503.
+LAST_FM_API_KEY=
+LAST_FM_SHARED_SECRET=
+DISCOGS_CLIENT_KEY=
+DISCOGS_CLIENT_SECRET=
+MUSICBRAINZ_CLIENT_ID=
+MUSICBRAINZ_CLIENT_SECRET=
+MUSICBRAINZ_CALLBACK_URL=
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
+TIDAL_CLIENT_ID=
+TIDAL_CLIENT_SECRET=
