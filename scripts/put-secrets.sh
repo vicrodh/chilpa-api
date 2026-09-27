@@ -52,7 +52,9 @@ shape_of() {
     case $1 in
         hex32) echo '^[0-9a-f]{32}$' ;;
         token) echo '^[A-Za-z0-9._~+/=-]{8,256}$' ;;
-        callback) echo '^(https?://[^[:space:]]+|urn:ietf:wg:oauth:2\.0:oob)$' ;;
+        # An http(s) URL, the out-of-band marker, or a private-use scheme in
+        # reverse-DNS form (RFC 8252 7.1), such as app.example.name:/callback.
+        callback) echo '^(https?://[^[:space:]]+|urn:ietf:wg:oauth:2\.0:oob|[a-z][a-z0-9+-]*(\.[a-z0-9+-]+)+:[^[:space:]]+)$' ;;
     esac
 }
 
@@ -60,7 +62,7 @@ describe() {
     case $1 in
         hex32) echo '32 hex characters' ;;
         token) echo 'one word of 8 to 256 characters' ;;
-        callback) echo 'an http(s) URL or urn:ietf:wg:oauth:2.0:oob' ;;
+        callback) echo 'an http(s) URL, urn:ietf:wg:oauth:2.0:oob, or a reverse-DNS scheme' ;;
     esac
 }
 
@@ -82,6 +84,14 @@ for entry in $SECRETS; do
     fi
     if ! printf '%s' "$value" | grep -Eq "$(shape_of "$shape")"; then
         echo "$name does not look right (expected $(describe "$shape")); check it in the file" >&2
+        # What kind of wrong, never the value.
+        if printf '%s' "$value" | grep -q '[[:space:]]'; then
+            echo "  it contains spaces: a comment after the value, or a stray space?" >&2
+        elif printf '%s' "$value" | grep -q '^[A-Za-z][A-Za-z0-9+.-]*:'; then
+            echo "  its scheme is '$(printf '%s' "$value" | sed 's/:.*//')'" >&2
+        else
+            echo "  it has no scheme (such as http:)" >&2
+        fi
         exit 1
     fi
     echo "$name: looks right"
