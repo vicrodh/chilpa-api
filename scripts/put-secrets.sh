@@ -8,6 +8,9 @@
 # into `wrangler secret put`. Nothing here prints a value: an agent may run
 # this script, and whatever it prints reaches the agent's servers.
 #
+# Last.fm is required. Any other value left empty in the file is skipped, and
+# that service answers 503 until it is filled in and this runs again.
+#
 # Run it after the first `npx wrangler deploy`: each secret publishes a new
 # version of a worker that must already exist.
 
@@ -16,7 +19,21 @@ set +x
 
 HERE=$(cd "$(dirname "$0")" && pwd)
 FILE=${CHILPA_SECRETS_FILE:-"$HERE/../../.env"}
-NAMES='LAST_FM_API_KEY LAST_FM_SHARED_SECRET'
+
+# NAME:shape:need. The shape is checked before anything reaches Cloudflare.
+SECRETS='
+LAST_FM_API_KEY:hex32:required
+LAST_FM_SHARED_SECRET:hex32:required
+DISCOGS_CLIENT_KEY:token:optional
+DISCOGS_CLIENT_SECRET:token:optional
+MUSICBRAINZ_CLIENT_ID:token:optional
+MUSICBRAINZ_CLIENT_SECRET:token:optional
+MUSICBRAINZ_CALLBACK_URL:callback:optional
+SPOTIFY_CLIENT_ID:token:optional
+SPOTIFY_CLIENT_SECRET:token:optional
+TIDAL_CLIENT_ID:token:optional
+TIDAL_CLIENT_SECRET:token:optional
+'
 
 if [ ! -f "$FILE" ]; then
     echo "No secrets file at $FILE" >&2
@@ -31,22 +48,47 @@ value_of() {
         | sed -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'\$/\1/"
 }
 
+shape_of() {
+    case $1 in
+        hex32) echo '^[0-9a-f]{32}$' ;;
+        token) echo '^[A-Za-z0-9._~+/=-]{8,256}$' ;;
+        callback) echo '^(https?://[^[:space:]]+|urn:ietf:wg:oauth:2\.0:oob)$' ;;
+    esac
+}
+
+describe() {
+    case $1 in
+        hex32) echo '32 hex characters' ;;
+        token) echo 'one word of 8 to 256 characters' ;;
+        callback) echo 'an http(s) URL or urn:ietf:wg:oauth:2.0:oob' ;;
+    esac
+}
+
 # Check every value before touching Cloudflare.
-for name in $NAMES; do
+LOAD=''
+for entry in $SECRETS; do
+    name=${entry%%:*}
+    rest=${entry#*:}
+    shape=${rest%%:*}
+    need=${rest#*:}
     value=$(value_of "$name")
     if [ -z "$value" ]; then
-        echo "$name is missing from $FILE" >&2
-        exit 1
+        if [ "$need" = required ]; then
+            echo "$name is missing from $FILE" >&2
+            exit 1
+        fi
+        echo "$name: empty, skipped"
+        continue
     fi
-    # Last.fm keys and secrets are 32 hex characters.
-    if ! printf '%s' "$value" | grep -Eq '^[0-9a-f]{32}$'; then
-        echo "$name does not look like a Last.fm value (32 hex characters); check it in the file" >&2
+    if ! printf '%s' "$value" | grep -Eq "$(shape_of "$shape")"; then
+        echo "$name does not look right (expected $(describe "$shape")); check it in the file" >&2
         exit 1
     fi
     echo "$name: looks right"
+    LOAD="$LOAD $name"
 done
 
 cd "$HERE/.."
-for name in $NAMES; do
+for name in $LOAD; do
     value_of "$name" | tr -d '\n' | npx wrangler secret put "$name"
 done
