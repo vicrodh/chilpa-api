@@ -1,3 +1,39 @@
+/**
+ * The client's parameters as strings: the query of a GET, or a JSON or form
+ * body. Null for a body it cannot read. Nested values are dropped.
+ */
+export async function readParams(request: Request): Promise<Record<string, string> | null> {
+  const raw: Record<string, unknown> = {};
+  if (request.method === 'GET') {
+    new URL(request.url).searchParams.forEach((value, key) => { raw[key] = value; });
+  } else {
+    const type = request.headers.get('Content-Type') || '';
+    if (type.includes('application/json')) {
+      let body: unknown;
+      try {
+        body = await request.json();
+      } catch {
+        return null;
+      }
+      if (body && typeof body === 'object' && !Array.isArray(body)) {
+        Object.assign(raw, body);
+      }
+    } else if (type.includes('application/x-www-form-urlencoded')) {
+      (await request.formData()).forEach((value, key) => { raw[key] = value; });
+    } else {
+      return null;
+    }
+  }
+
+  const params: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (value !== null && value !== undefined && typeof value !== 'object') {
+      params[key] = String(value);
+    }
+  }
+  return params;
+}
+
 /** A JSON response. */
 export function json(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
