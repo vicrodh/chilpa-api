@@ -1,23 +1,36 @@
 /**
  * Chilpa API proxy, a Cloudflare Worker at api.chilpa.app.
  *
- * Last.fm signs every call with the application's shared secret, which
- * cannot ship inside a program anyone can read. Chilpa sends the call here
- * and the worker adds the key and the signature. Only Chilpa is served: the
- * QBZ builds still in use keep their own worker, qbz-api-proxy.
+ * Some services sign every call with an application secret, which cannot ship
+ * inside a program anyone can read. Chilpa sends those calls here and the
+ * worker adds the credentials. Only Chilpa is served: the QBZ builds still in
+ * use keep their own worker, qbz-api-proxy.
  */
 
+import { handleDiscogs } from './discogs';
 import { handleLastFm } from './lastfm';
+import { handleMusicBrainz } from './musicbrainz';
+import { handlePlaylists } from './playlists';
 import { json, logRequest, rateLimit } from './utils';
 
+/** Chilpa's own applications, one secret each, set with `wrangler secret put`. */
 export interface Env {
-  // Chilpa's own Last.fm API account, set with `wrangler secret put`.
   LAST_FM_API_KEY?: string;
   LAST_FM_SHARED_SECRET?: string;
+  DISCOGS_CLIENT_KEY?: string;
+  DISCOGS_CLIENT_SECRET?: string;
+  MUSICBRAINZ_CLIENT_ID?: string;
+  MUSICBRAINZ_CLIENT_SECRET?: string;
+  MUSICBRAINZ_CALLBACK_URL?: string;
+  SPOTIFY_CLIENT_ID?: string;
+  SPOTIFY_CLIENT_SECRET?: string;
+  TIDAL_CLIENT_ID?: string;
+  TIDAL_CLIENT_SECRET?: string;
 }
 
 const SERVICE = 'Chilpa API Proxy';
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
+const ENDPOINTS = ['/lastfm/*', '/discogs/*', '/musicbrainz/oauth/*', '/spotify/playlist/*', '/tidal/playlist/*'];
 
 /**
  * Chilpa sends `User-Agent: Chilpa`. Any program can send that header, so it
@@ -48,14 +61,24 @@ export default {
     logRequest(request);
 
     const path = new URL(request.url).pathname;
+    const [, provider = '', ...rest] = path.split('/');
+    const route = rest.join('/');
     try {
-      if (path === '/') {
-        return json({ service: SERVICE, version: VERSION, endpoints: ['/lastfm/*'] });
+      switch (provider) {
+        case '':
+          return json({ service: SERVICE, version: VERSION, endpoints: ENDPOINTS });
+        case 'lastfm':
+          return await handleLastFm(request, env, route);
+        case 'discogs':
+          return await handleDiscogs(request, env, route);
+        case 'musicbrainz':
+          return await handleMusicBrainz(request, env, route);
+        case 'spotify':
+        case 'tidal':
+          return await handlePlaylists(request, env, provider, route);
+        default:
+          return json({ error: 'Not found' }, 404);
       }
-      if (path.startsWith('/lastfm/')) {
-        return await handleLastFm(request, env, path.slice('/lastfm/'.length));
-      }
-      return json({ error: 'Not found' }, 404);
     } catch (error) {
       console.error('Worker error:', error);
       return json({ error: 'Internal server error' }, 500);
