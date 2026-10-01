@@ -11,7 +11,7 @@
 #
 #   UNCONFIGURED="musicbrainz tidal" sh test/smoke.sh
 #
-# Providers: lastfm discogs musicbrainz spotify tidal.
+# Providers: lastfm discogs musicbrainz spotify tidal podcastindex.
 
 set -u
 
@@ -103,6 +103,25 @@ else
     # Error 9 is a signature accepted and a session rejected; 13 is a bad signature.
     call "$UA" POST /lastfm/track.updateNowPlaying '{"sk":"0000","artist":"Cuca","track":"El Son del Dolor"}'
     expect 'lastfm signed: writes are signed' 403 '"error":9'
+fi
+
+# --- PodcastIndex ------------------------------------------------------------
+
+call "$UA" GET /podcastindex/add/byfeedurl
+expect 'podcastindex: a path that is not a listed read is not found' 404
+
+call "$UA" POST /podcastindex/search/byterm '{"q":"x"}'
+expect 'podcastindex: only GET' 405
+
+if unconfigured podcastindex; then
+    call "$UA" GET '/podcastindex/search/byterm?q=radiolab&max=1'
+    expect 'podcastindex: without secrets it is unavailable' 503 'not configured'
+else
+    call "$UA" GET '/podcastindex/search/byterm?q=radiolab&max=1'
+    expect 'podcastindex signed: a search is answered' 200 '"feeds"'
+
+    call "$UA" GET '/podcastindex/podcasts/trending?max=1&lang=es'
+    expect 'podcastindex signed: the trending ones of a language' 200 '"feeds"'
 fi
 
 # --- Discogs -----------------------------------------------------------------

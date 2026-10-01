@@ -21,6 +21,7 @@ preview_urls = false
 # - MUSICBRAINZ_CLIENT_ID, MUSICBRAINZ_CLIENT_SECRET, MUSICBRAINZ_CALLBACK_URL
 # - SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
 # - TIDAL_CLIENT_ID, TIDAL_CLIENT_SECRET
+# - PODCASTINDEX_KEY, PODCASTINDEX_SECRET
 # scripts/put-secrets.sh loads them from that file without printing them;
 # `npx wrangler secret put NAME` does one by hand. A provider without its
 # secrets answers 503.

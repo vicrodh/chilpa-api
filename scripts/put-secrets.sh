@@ -33,6 +33,8 @@ SPOTIFY_CLIENT_ID:token:optional
 SPOTIFY_CLIENT_SECRET:token:optional
 TIDAL_CLIENT_ID:token:optional
 TIDAL_CLIENT_SECRET:token:optional
+PODCASTINDEX_KEY:token:optional
+PODCASTINDEX_SECRET:printable:optional
 '
 
 if [ ! -f "$FILE" ]; then
@@ -52,6 +54,8 @@ shape_of() {
     case $1 in
         hex32) echo '^[0-9a-f]{32}$' ;;
         token) echo '^[A-Za-z0-9._~+/=-]{8,256}$' ;;
+        # Any visible ASCII and no space: a secret that carries symbols.
+        printable) echo '^[!-~]{8,256}$' ;;
         # An http(s) URL, the out-of-band marker, or a private-use scheme in
         # reverse-DNS form (RFC 8252 7.1), such as app.example.name:/callback.
         callback) echo '^(https?://[^[:space:]]+|urn:ietf:wg:oauth:2\.0:oob|[a-z][a-z0-9+-]*(\.[a-z0-9+-]+)+:[^[:space:]]+)$' ;;
@@ -62,6 +66,7 @@ describe() {
     case $1 in
         hex32) echo '32 hex characters' ;;
         token) echo 'one word of 8 to 256 characters' ;;
+        printable) echo '8 to 256 visible characters with no space' ;;
         callback) echo 'an http(s) URL, urn:ietf:wg:oauth:2.0:oob, or a reverse-DNS scheme' ;;
     esac
 }

@@ -11,6 +11,7 @@ import { handleDiscogs } from './discogs';
 import { handleLastFm } from './lastfm';
 import { handleMusicBrainz } from './musicbrainz';
 import { handlePlaylists } from './playlists';
+import { handlePodcastIndex } from './podcastindex';
 import { json, logRequest, rateLimit } from './utils';
 
 /** Chilpa's own applications, one secret each, set with `wrangler secret put`. */
@@ -26,11 +27,13 @@ export interface Env {
   SPOTIFY_CLIENT_SECRET?: string;
   TIDAL_CLIENT_ID?: string;
   TIDAL_CLIENT_SECRET?: string;
+  PODCASTINDEX_KEY?: string;
+  PODCASTINDEX_SECRET?: string;
 }
 
 const SERVICE = 'Chilpa API Proxy';
-const VERSION = '1.1.0';
-const ENDPOINTS = ['/lastfm/*', '/discogs/*', '/musicbrainz/oauth/*', '/spotify/playlist/*', '/tidal/playlist/*'];
+const VERSION = '1.2.0';
+const ENDPOINTS = ['/lastfm/*', '/discogs/*', '/musicbrainz/oauth/*', '/spotify/playlist/*', '/tidal/playlist/*', '/podcastindex/*'];
 
 /**
  * Chilpa sends `User-Agent: Chilpa`. Any program can send that header, so it
@@ -73,6 +76,8 @@ export default {
           return await handleDiscogs(request, env, route);
         case 'musicbrainz':
           return await handleMusicBrainz(request, env, route);
+        case 'podcastindex':
+          return await handlePodcastIndex(request, env, route);
         case 'spotify':
         case 'tidal':
           return await handlePlaylists(request, env, provider, route);

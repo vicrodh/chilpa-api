@@ -65,6 +65,18 @@ worker.
 - `GET /tidal/playlist/<uuid>` and `/tidal/playlist/<uuid>/items`
   (`countryCode`, `include`, `page[cursor]`, `locale` pass through).
 
+## PodcastIndex
+
+Signed with Chilpa's own application: the key, the time and a SHA-1 of the
+key, the secret and that time go in headers, added here.
+
+- `GET /podcastindex/<path>?<query>`: `api.podcastindex.org/api/1.0/<path>`,
+  with the query as it came.
+- Allowed, all reads: `search/byterm`, `search/bytitle`, `podcasts/byfeedid`,
+  `podcasts/byitunesid`, `podcasts/trending`, `episodes/byfeedid`,
+  `episodes/byitunesid`, `episodes/byid`, `recent/episodes`,
+  `categories/list`. Any other path is 404.
+
 ## Develop
 
 ```sh
