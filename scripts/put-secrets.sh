@@ -87,7 +87,8 @@ for entry in $SECRETS; do
         echo "$name: empty, skipped"
         continue
     fi
-    if ! printf '%s' "$value" | grep -Eq "$(shape_of "$shape")"; then
+    # In the C locale, so a range such as [!-~] means the bytes it says.
+    if ! printf '%s' "$value" | LC_ALL=C grep -Eq "$(shape_of "$shape")"; then
         echo "$name does not look right (expected $(describe "$shape")); check it in the file" >&2
         # What kind of wrong, never the value.
         if printf '%s' "$value" | grep -q '[[:space:]]'; then
