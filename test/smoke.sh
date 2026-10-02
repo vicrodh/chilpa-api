@@ -116,12 +116,18 @@ expect 'podcastindex: only GET' 405
 if unconfigured podcastindex; then
     call "$UA" GET '/podcastindex/search/byterm?q=radiolab&max=1'
     expect 'podcastindex: without secrets it is unavailable' 503 'not configured'
+
+    call "$UA" GET /podcastindex/auth
+    expect 'podcastindex: without secrets there is no signature' 503 'not configured'
 else
     call "$UA" GET '/podcastindex/search/byterm?q=radiolab&max=1'
     expect 'podcastindex signed: a search is answered' 200 '"feeds"'
 
     call "$UA" GET '/podcastindex/podcasts/trending?max=1&lang=es'
     expect 'podcastindex signed: the trending ones of a language' 200 '"feeds"'
+
+    call "$UA" GET /podcastindex/auth
+    expect 'podcastindex: the signature alone, with when it goes stale' 200 '"expires_at"'
 fi
 
 # --- Discogs -----------------------------------------------------------------

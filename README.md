@@ -72,6 +72,10 @@ key, the secret and that time go in headers, added here.
 
 - `GET /podcastindex/<path>?<query>`: `api.podcastindex.org/api/1.0/<path>`,
   with the query as it came.
+- `GET /podcastindex/auth`: the signature alone, for a client that makes
+  the call itself: `{"headers": {"X-Auth-Key", "X-Auth-Date",
+  "Authorization"}, "expires_at": <unix seconds>}`, never cached. The
+  replies then go from PodcastIndex to the client, not through here.
 - Allowed, all reads: `search/byterm`, `search/bytitle`, `podcasts/byfeedid`,
   `podcasts/byitunesid`, `podcasts/trending`, `episodes/byfeedid`,
   `episodes/byitunesid`, `episodes/byid`, `recent/episodes`,
