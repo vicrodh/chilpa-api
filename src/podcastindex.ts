@@ -107,6 +107,9 @@ export async function handlePodcastIndex(request: Request, env: Env, path: strin
 
   return new Response(reply.body, {
     status: reply.status,
-    headers: { 'Content-Type': reply.headers.get('Content-Type') || 'application/json' }
+    headers: {
+      'Content-Type': reply.headers.get('Content-Type') || 'application/json',
+      ...(reply.headers.has('Retry-After') ? { 'Retry-After': reply.headers.get('Retry-After')! } : {})
+    }
   });
 }
