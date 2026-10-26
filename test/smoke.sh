@@ -39,10 +39,10 @@ get_encoded() {
 # expect <name> <status> [text the body must contain]
 expect() {
     if [ "$STATUS" != "$2" ]; then
-        echo "FAIL $1: status $STATUS, expected $2: $(head -c 200 "$BODY")"
+        echo "FAIL $1: status $STATUS, expected $2"
         FAILURES=$((FAILURES + 1))
     elif [ $# -ge 3 ] && ! grep -qF -- "$3" "$BODY"; then
-        echo "FAIL $1: body lacks $3: $(head -c 200 "$BODY")"
+        echo "FAIL $1: body lacks $3"
         FAILURES=$((FAILURES + 1))
     else
         echo "PASS $1"

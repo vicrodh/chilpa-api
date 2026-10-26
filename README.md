@@ -1,10 +1,12 @@
 # Chilpa API Proxy
 
-A Cloudflare Worker at `https://api.chilpa.app` that holds the credentials of
-Chilpa's own applications, so no secret ships inside the app. Released
-Chilpa builds carry this address; it never changes, the worker behind it can.
+I keep the setup for Chilpa's applications in a Cloudflare Worker at
+`https://api.chilpa.app`. Released builds carry this address. Discogs OAuth
+receives signing material at runtime so both exchanges use the client's IP;
+that material is deliberately available to the client.
 
-Every request needs `User-Agent: Chilpa...`; anything else gets 403. That is
+Requests need `User-Agent: Chilpa...`; anything else gets 403, except the
+fixed Discogs browser callback. That is
 not authentication, it keeps the worker from being used by accident. GET and
 POST only. A provider without its secrets answers 503 `<Provider> is not
 configured`. Errors from the worker are JSON `{"error": "..."}`; answers from
@@ -26,8 +28,10 @@ or `callback`.
 
 ## Discogs
 
-The consumer key and secret go in the `Authorization` header, and only to
-https hosts on `discogs.com`, redirects included.
+I send metadata credentials only to `https://api.discogs.com` and follow no
+authenticated redirects. Images receive no credential; their redirects stay
+on HTTPS Discogs hosts. The data routes are an anonymous backup for native
+clients, which query Discogs directly.
 
 - `GET /discogs/search?q=<query>&type=<type>` (type defaults to `release`;
   `page` and `per_page` pass through): `api.discogs.com/database/search`.
@@ -36,6 +40,24 @@ https hosts on `discogs.com`, redirects included.
   other host is 400.
 
 `Retry-After` and the `X-Discogs-Ratelimit*` headers pass through.
+
+I serve these OAuth routes without caching:
+
+- `GET /discogs/oauth/setup?callback=https://api.chilpa.app/discogs/oauth/done`
+  returns `{consumer_key, signature}`. The signature is the RFC 5849
+  PLAINTEXT base `encode(consumer_secret)&`. The native client combines it
+  with each encoded token secret and encodes the header parameter again.
+  It posts directly to Discogs' `oauth/request_token` and `oauth/access_token`.
+- `GET /discogs/oauth/done` shows a bounded, plain authorization code to a
+  regular browser. It has no external resources and does not echo markup.
+- I retain `GET /discogs/oauth/begin?callback=...` and `GET /discogs/oauth/finish`
+  for earlier clients. Finish takes `oauth_token` and `oauth_verifier` in
+  the query and the one-use request secret in `Authorization: Chilpa ...`.
+  Both exchanges can receive 429 from the shared worker IP; setup avoids
+  using that IP for the exchanges.
+
+The current native flow keeps user access credentials on the client and
+verifies identity directly. I never log OAuth response bodies.
 
 ## MusicBrainz: OAuth only
 
@@ -88,6 +110,7 @@ npm install
 cp .dev.vars.example .dev.vars   # then fill in what you need
 npm run dev                      # http://localhost:8787
 npm run check                    # TypeScript
+npm test                         # isolated protocol fixtures
 sh test/smoke.sh                 # against the dev server
 ```
 
@@ -98,7 +121,7 @@ to answer 503 instead of calling out.
 
 ```sh
 npx wrangler login               # in a real terminal
-npx wrangler deploy              # first time: creates api.chilpa.app
+npx wrangler deploy --env-file /dev/null  # preserves existing worker secrets
 sh scripts/put-secrets.sh        # every secret from the owner's secrets file
 sh test/smoke.sh https://api.chilpa.app
 ```
