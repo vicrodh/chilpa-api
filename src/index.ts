@@ -8,6 +8,7 @@
  */
 
 import { handleDiscogs } from './discogs';
+import { discogsCallback } from './discogs-oauth';
 import { handleLastFm } from './lastfm';
 import { handleMusicBrainz } from './musicbrainz';
 import { handlePlaylists } from './playlists';
@@ -32,8 +33,8 @@ export interface Env {
 }
 
 const SERVICE = 'Chilpa API Proxy';
-const VERSION = '1.3.0';
-const ENDPOINTS = ['/lastfm/*', '/discogs/*', '/musicbrainz/oauth/*', '/spotify/playlist/*', '/tidal/playlist/*', '/podcastindex/*'];
+const VERSION = '1.4.0';
+const ENDPOINTS = ['/lastfm/*', '/discogs/*', '/discogs/oauth/*', '/musicbrainz/oauth/*', '/spotify/playlist/*', '/tidal/playlist/*', '/podcastindex/*'];
 
 /**
  * Chilpa sends `User-Agent: Chilpa`. Any program can send that header, so it
@@ -45,6 +46,9 @@ function isChilpa(request: Request): boolean {
 
 export default {
   async fetch(request, env): Promise<Response> {
+    if (new URL(request.url).pathname === '/discogs/oauth/done' && request.method === 'GET') {
+      return discogsCallback(request);
+    }
     if (!isChilpa(request)) {
       return json({ error: 'This proxy only serves Chilpa' }, 403);
     }

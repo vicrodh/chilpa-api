@@ -132,6 +132,15 @@ fi
 
 # --- Discogs -----------------------------------------------------------------
 
+get_encoded /discogs/oauth/begin callback 'https://example.com/callback'
+expect 'discogs oauth: a foreign callback is refused' 400 'Invalid callback'
+
+call 'Mozilla/5.0' GET '/discogs/oauth/done?oauth_verifier=%3Cscript%3Eabc%3C%2Fscript%3E'
+expect 'discogs oauth: the browser callback renders only a plain code' 200 '<code>scriptabcscript</code>'
+
+call "$UA" GET '/discogs/oauth/finish?oauth_token=request&oauth_verifier=code'
+expect 'discogs oauth: a request secret is required in the header' 400 'Invalid authorization parameters'
+
 get_encoded /discogs/image url 'https://example.com/x.jpg'
 expect 'discogs: the credentials never go to another host' 400 'Only https Discogs'
 

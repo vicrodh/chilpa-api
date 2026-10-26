@@ -8,6 +8,7 @@
     "deploy": "wrangler deploy",
     "tail": "wrangler tail",
     "check": "tsc --noEmit -p .",
+    "test": "sh test/unit.sh",
     "smoke": "sh test/smoke.sh"
   },
   "author": "vicrodh",

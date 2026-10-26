@@ -2,13 +2,13 @@
  * Discogs: search, a release, and its images, signed with Chilpa's own
  * Discogs application.
  *
- * The consumer key and secret travel in the Authorization header, never in a
- * URL, and only to https hosts on discogs.com: QBZ's worker once sent them to
- * whatever URL /discogs/image was given.
+ * I sign metadata only at the direct API origin. Images receive no
+ * credential and their redirects stay on Discogs hosts.
  */
 
 import type { Env } from './index';
 import { json } from './utils';
+import { handleDiscogsOAuth } from './discogs-oauth';
 
 const API = 'https://api.discogs.com';
 
@@ -46,16 +46,13 @@ function passOn(reply: Response): Response {
 }
 
 /**
- * An image, following redirects by hand so the credentials only go to
- * Discogs hosts, wherever a redirect points.
+ * I follow an image's redirects by hand without sending a credential.
  */
-async function fetchImage(start: URL, auth: string): Promise<Response> {
+async function fetchImage(start: URL): Promise<Response> {
   let target = start;
   for (let hop = 0; ; hop++) {
     const headers: Record<string, string> = { 'User-Agent': USER_AGENT };
-    if (isDiscogsUrl(target)) {
-      headers['Authorization'] = auth;
-    }
+    if (!isDiscogsUrl(target)) return json({ error: 'Invalid image redirect' }, 502);
     const reply = await fetch(target, { headers, redirect: 'manual' });
     const location = reply.headers.get('Location');
     if (reply.status < 300 || reply.status >= 400 || !location || hop >= MAX_REDIRECTS) {
@@ -72,6 +69,7 @@ async function fetchImage(start: URL, auth: string): Promise<Response> {
  * - GET /discogs/image?url=<https Discogs image URL>
  */
 export async function handleDiscogs(request: Request, env: Env, route: string): Promise<Response> {
+  if (route.startsWith('oauth/')) return handleDiscogsOAuth(request, env, route.slice('oauth/'.length));
   const query = new URL(request.url).searchParams;
   let target: URL;
   let image = false;
@@ -112,6 +110,14 @@ export async function handleDiscogs(request: Request, env: Env, route: string): 
     return json({ error: 'Not found' }, 404);
   }
 
+  if (image) {
+    const reply = await fetchImage(target);
+    if (!reply.ok) {
+      return json({ error: 'Failed to fetch image from Discogs' }, reply.status >= 400 ? reply.status : 502);
+    }
+    return passOn(reply);
+  }
+
   const key = env.DISCOGS_CLIENT_KEY;
   const secret = env.DISCOGS_CLIENT_SECRET;
   if (!key || !secret) {
@@ -119,15 +125,8 @@ export async function handleDiscogs(request: Request, env: Env, route: string): 
   }
   const auth = `Discogs key=${key}, secret=${secret}`;
 
-  if (image) {
-    const reply = await fetchImage(target, auth);
-    if (!reply.ok) {
-      return json({ error: 'Failed to fetch image from Discogs' }, reply.status >= 400 ? reply.status : 502);
-    }
-    return passOn(reply);
-  }
-
   return passOn(await fetch(target, {
+    redirect: 'manual',
     headers: { 'User-Agent': USER_AGENT, 'Authorization': auth, 'Accept': 'application/json' }
   }));
 }
