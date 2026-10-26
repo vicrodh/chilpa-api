@@ -53,6 +53,16 @@ test('I sign the temporary credential request and keep the application secret ou
   });
 });
 
+test('I provide bounded direct signing setup without calling the quota-limited API', async () => {
+  await mock(() => assert.fail('Setup must not use the shared upstream IP'), async () => {
+    const response = await handleDiscogsOAuth(request(`setup?callback=${encodeURIComponent(DISCOGS_CALLBACK)}`), env, 'setup');
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+    assert.deepEqual(await response.json(), { consumer_key: 'fixture-key', signature: 'FIXTURE_SECRET&' });
+    assert.equal((await handleDiscogsOAuth(request('setup?callback=https://evil.test'), env, 'setup')).status, 400);
+  });
+});
+
 test('I exchange a verifier with its header secret and deliver the per-request signing value', async () => {
   await mock(async (url, options) => {
     assert.equal(url, 'https://api.discogs.com/oauth/access_token');

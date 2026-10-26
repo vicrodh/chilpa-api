@@ -69,7 +69,7 @@ export function discogsCallback(request: Request): Response {
 
 export async function handleDiscogsOAuth(request: Request, env: Env, route: string): Promise<Response> {
   if (route === 'done') return discogsCallback(request);
-  if (!['begin', 'finish'].includes(route)) return failure('Not found', 404);
+  if (!['setup', 'begin', 'finish'].includes(route)) return failure('Not found', 404);
   if (request.method !== 'GET') return failure('Method not allowed', 405);
   const query = new URL(request.url).searchParams;
   const callback = query.get('callback');
@@ -77,7 +77,7 @@ export async function handleDiscogsOAuth(request: Request, env: Env, route: stri
   const verifier = query.get('oauth_verifier');
   const authorization = request.headers.get('Authorization') || '';
   const requestSecret = authorization.startsWith('Chilpa ') ? authorization.slice('Chilpa '.length) : '';
-  if (route === 'begin' && (callback !== DISCOGS_CALLBACK || query.getAll('callback').length !== 1)) {
+  if (['setup', 'begin'].includes(route) && (callback !== DISCOGS_CALLBACK || query.getAll('callback').length !== 1)) {
     return failure('Invalid callback', 400);
   }
   if (route === 'finish' && (!safe(token) || !safe(verifier, 128) || !safe(requestSecret)
@@ -87,6 +87,9 @@ export async function handleDiscogsOAuth(request: Request, env: Env, route: stri
   const key = env.DISCOGS_CLIENT_KEY;
   const secret = env.DISCOGS_CLIENT_SECRET;
   if (!key || !secret) return failure('Discogs is not configured', 503);
+  // I let the native client perform both exchanges from its own IP. The
+  // shared worker IP can exhaust the OAuth endpoints as well as metadata.
+  if (route === 'setup') return json({ consumer_key: key, signature: `${encode(secret)}&` }, 200, PRIVATE);
   try {
     const begin = route === 'begin';
     const auth = begin ? header(key, secret, '', '', { oauth_callback: DISCOGS_CALLBACK })
