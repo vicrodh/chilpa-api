@@ -97,7 +97,13 @@ export async function handleDiscogsOAuth(request: Request, env: Env, route: stri
     });
     if (!reply.ok) {
       await reply.body?.cancel();
-      return failure('Discogs did not accept the authorization', reply.status === 401 ? 401 : 502);
+      const headers: Record<string, string> = { ...PRIVATE, 'X-Chilpa-Upstream-Status': String(reply.status) };
+      if (reply.status === 429) {
+        const retry = reply.headers.get('Retry-After');
+        headers['Retry-After'] = retry && /^\d{1,4}$/.test(retry) ? retry : '60';
+      }
+      return json({ error: 'Discogs did not accept the authorization' },
+        reply.status === 401 ? 401 : reply.status === 429 ? 429 : 502, headers);
     }
     const values = await form(reply);
     const access = values?.get('oauth_token') || '';

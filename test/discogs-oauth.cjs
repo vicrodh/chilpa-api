@@ -95,6 +95,16 @@ test('I discard reflected failures, oversized responses and thrown secret-bearin
   }
 });
 
+test('I preserve an OAuth cooldown without reflecting the upstream failure body', async () => {
+  await mock(async () => new Response('REFLECTED_SECRET', { status: 429, headers: { 'Retry-After': '90' } }), async () => {
+    const response = await handleDiscogsOAuth(request(`begin?callback=${encodeURIComponent(DISCOGS_CALLBACK)}`), env, 'begin');
+    assert.equal(response.status, 429);
+    assert.equal(response.headers.get('Retry-After'), '90');
+    assert.equal(response.headers.get('X-Chilpa-Upstream-Status'), '429');
+    assert.ok(!(await response.text()).includes('REFLECTED_SECRET'));
+  });
+});
+
 test('I serve the callback to a regular browser without reflecting script markup', async () => {
   const response = await worker.fetch(new Request('https://api.chilpa.app/discogs/oauth/done?oauth_verifier=%3Cscript%3Eabc%3C%2Fscript%3E', {
     headers: { 'User-Agent': 'Mozilla/5.0' }
