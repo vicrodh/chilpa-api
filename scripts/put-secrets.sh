@@ -17,6 +17,14 @@
 set -eu
 set +x
 
+# Names given as arguments (sh scripts/put-secrets.sh SERVICE_KEYS) limit
+# what is loaded to them; every value is still checked. Without arguments,
+# everything in the file is loaded.
+ONLY=" $* "
+wanted() {
+    [ "$ONLY" = "  " ] || case "$ONLY" in *" $1 "*) return 0 ;; *) return 1 ;; esac
+}
+
 HERE=$(cd "$(dirname "$0")" && pwd)
 FILE=${CHILPA_SECRETS_FILE:-"$HERE/../../.env"}
 
@@ -128,10 +136,11 @@ fi
 
 cd "$HERE/.."
 for name in $LOAD; do
+    wanted "$name" || continue
     value_of "$name" | tr -d '\n' | npx wrangler secret put "$name"
 done
 
-if [ -n "$KEYS" ]; then
+if [ -n "$KEYS" ] && wanted SERVICE_KEYS; then
     for channel in $KEYS; do
         name=CHILPA_SERVICE_KEY_$(printf '%s' "$channel" | tr '[:lower:]' '[:upper:]')
         printf '%s:%s ' "$channel" "$(value_of "$name")"
