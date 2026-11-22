@@ -1,10 +1,12 @@
 /**
  * Signatures from Chilpa's builds. The same file is in chilpa-lyrics-service.
  *
- * A build that carries a key signs every request: `X-Chilpa-Time`, seconds
- * since 1970, and `X-Chilpa-Signature`, `v1=` and the HMAC-SHA256 in hex of
+ * A build that carries a key signs every request with
+ * `Authorization: Chilpa-Signature t=<time>, v1=<hex>`: the time in seconds
+ * since 1970 and the HMAC-SHA256 in hex of
  * `chilpa-service-v1\n{METHOD}\n{host}\n{path}\n{time}`, the path without
- * its query (crates/chilpa-api/src/service_signature.rs in Chilpa).
+ * its query (crates/chilpa-api/src/service_signature.rs in Chilpa). Being an
+ * authorization, it does not follow a redirect.
  *
  * The keys are the `SERVICE_KEYS` secret: `name:hex` pairs separated by
  * spaces, one per channel of builds (`ci`, `dev`, `flathub`). A signature
@@ -19,7 +21,7 @@ export const WINDOW_S = 15 * 60;
 
 /** This clock in seconds, on every reply; a build signs its next request by it. */
 export const TIME_HEADER = 'X-Chilpa-Time';
-const SIGNATURE_HEADER = 'X-Chilpa-Signature';
+const SIGNED = /^Chilpa-Signature t=(\d{1,12}), v1=([0-9a-f]{64})$/;
 
 /** What a build without a valid signature is told once unsigned requests are refused. */
 export const REFUSAL = {
@@ -63,11 +65,12 @@ function keysOf(secret: string | undefined): Promise<Key[]> {
 
 /** The channel whose key signed `request`, or undefined when none did. */
 export async function signedBy(request: Request, secret: string | undefined, now = Date.now()): Promise<string | undefined> {
-  const time = request.headers.get(TIME_HEADER) ?? '';
-  const signature = /^v1=([0-9a-f]{64})$/.exec(request.headers.get(SIGNATURE_HEADER) ?? '')?.[1];
-  if (!/^\d{1,12}$/.test(time) || signature === undefined) {
+  const match = SIGNED.exec(request.headers.get('Authorization') ?? '');
+  if (!match) {
     return undefined;
   }
+  const time = match[1]!;
+  const signature = match[2]!;
   if (Math.abs(Number(time) - Math.floor(now / 1_000)) > WINDOW_S) {
     return undefined;
   }

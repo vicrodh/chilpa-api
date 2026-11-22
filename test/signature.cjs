@@ -13,7 +13,7 @@ const OTHER = 'ff'.repeat(32);
 const T = 1_700_000_000;
 
 function signed(url, method, time, signature) {
-  return new Request(url, { method, headers: { 'User-Agent': 'Chilpa', [TIME_HEADER]: String(time), 'X-Chilpa-Signature': `v1=${signature}` } });
+  return new Request(url, { method, headers: { 'User-Agent': 'Chilpa', Authorization: `Chilpa-Signature t=${time}, v1=${signature}` } });
 }
 
 function sign(key, method, url, time) {
@@ -56,10 +56,12 @@ test('headers of another shape are no signature', async () => {
   const keys = `ci:${COUNTING}`;
   const good = sign(COUNTING, 'GET', 'https://api.chilpa.app/lastfm', T);
   const bad = [
-    { [TIME_HEADER]: String(T), 'X-Chilpa-Signature': good },
-    { [TIME_HEADER]: String(T), 'X-Chilpa-Signature': `v2=${good}` },
-    { [TIME_HEADER]: `${T}.5`, 'X-Chilpa-Signature': `v1=${good}` },
-    { 'X-Chilpa-Signature': `v1=${good}` },
+    { Authorization: `Chilpa-Signature v1=${good}` },
+    { Authorization: `Chilpa-Signature t=${T}, v2=${good}` },
+    { Authorization: `Chilpa-Signature t=${T}.5, v1=${good}` },
+    { Authorization: `Chilpa-Signature t=${T}, v1=${good.toUpperCase()}` },
+    { Authorization: `Chilpa ${good}` },
+    { 'X-Chilpa-Time': String(T), 'X-Chilpa-Signature': `v1=${good}` },
     {}
   ];
   for (const headers of bad) {
@@ -99,6 +101,10 @@ test('past the date, the worker refuses what no key signed and answers what one 
 
   const callback = await worker.fetch(new Request('https://api.chilpa.app/discogs/oauth/done'), env);
   assert.notEqual(callback.status, 403, 'the browser callback needs no signature');
+
+  const finish = await worker.fetch(new Request('https://api.chilpa.app/discogs/oauth/finish?oauth_token=t&oauth_verifier=v',
+    { headers: { 'User-Agent': 'Chilpa', Authorization: 'Chilpa not-a-real-secret' } }), env);
+  assert.notDeepEqual(await finish.json(), REFUSAL, 'the finish carries its own secret, not a signature');
 
   const open = await worker.fetch(new Request(url, { headers: { 'User-Agent': 'Chilpa' } }), { SERVICE_KEYS: `ci:${COUNTING}` });
   assert.equal(open.status, 200, 'without the date, unsigned requests are answered as before');

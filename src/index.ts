@@ -64,7 +64,10 @@ async function answer(request: Request, env: Env): Promise<Response> {
     return json({ error: 'This proxy only serves Chilpa' }, 403);
   }
   const channel = await signedBy(request, env.SERVICE_KEYS);
-  if (channel === undefined && !unsignedAnswered(env.UNSIGNED_UNTIL)) {
+  // The handshake's finish carries its own one-use secret in Authorization,
+  // where a signature would go; only a signed begin hands that secret out.
+  const finish = new URL(request.url).pathname === '/discogs/oauth/finish';
+  if (channel === undefined && !finish && !unsignedAnswered(env.UNSIGNED_UNTIL)) {
     logRequest(request, 'refused');
     return json(REFUSAL, 403);
   }

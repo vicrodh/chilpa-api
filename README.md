@@ -14,12 +14,14 @@ a provider come back as the provider sent them, with its status.
 
 ## Signed builds
 
-Chilpa builds made with a service key sign every request:
-
-- `X-Chilpa-Time`: seconds since 1970.
-- `X-Chilpa-Signature`: `v1=` followed by the lowercase hex HMAC-SHA256 of
-  `chilpa-service-v1\n{METHOD}\n{host}\n{path}\n{time}`, where the path
-  has no query string.
+Chilpa builds made with a service key sign every request with
+`Authorization: Chilpa-Signature t=<time>, v1=<hex>`: the time in seconds
+since 1970 and the lowercase hex HMAC-SHA256 of
+`chilpa-service-v1\n{METHOD}\n{host}\n{path}\n{time}`, where the path has
+no query string. HTTP clients drop an authorization on a redirect, so the
+signature does not reach another host. The Discogs handshake's finish
+carries its own one-use secret in that header instead, and only a signed
+begin hands that secret out.
 
 The `SERVICE_KEYS` secret holds the accepted keys as `name:hex` pairs
 separated by spaces, one per build channel; the key that matches names the
