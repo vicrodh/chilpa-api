@@ -12,6 +12,26 @@ POST only. A provider without its secrets answers 503 `<Provider> is not
 configured`. Errors from the worker are JSON `{"error": "..."}`; answers from
 a provider come back as the provider sent them, with its status.
 
+## Signed builds
+
+Chilpa builds made with a service key sign every request:
+
+- `X-Chilpa-Time`: seconds since 1970.
+- `X-Chilpa-Signature`: `v1=` followed by the lowercase hex HMAC-SHA256 of
+  `chilpa-service-v1\n{METHOD}\n{host}\n{path}\n{time}`, where the path
+  has no query string.
+
+The `SERVICE_KEYS` secret holds the accepted keys as `name:hex` pairs
+separated by spaces, one per build channel; the key that matches names the
+channel in the request log. A time more than 15 minutes from the worker's
+clock is not accepted, and every reply carries `X-Chilpa-Time` so a client
+can sign by the worker's clock. The `UNSIGNED_UNTIL` variable, an ISO date,
+sets when unsigned requests start getting 403; without it they are answered
+as before. A key travels inside every binary that carries it, so this is not
+authentication either: it keeps copies of Chilpa's source from using this
+worker by default. A fork or a build of your own can deploy this worker
+with its own applications and keys and point to it.
+
 ## Last.fm
 
 `POST /lastfm/<method>` with the method's parameters as JSON (a form or a
