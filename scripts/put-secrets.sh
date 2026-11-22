@@ -104,7 +104,36 @@ for entry in $SECRETS; do
     LOAD="$LOAD $name"
 done
 
+# SERVICE_KEYS, the keys Chilpa's builds sign with (src/signature.ts), from
+# one line per channel in the file: CHILPA_SERVICE_KEY_CI, _DEV and _FLATHUB,
+# 64 hex characters each. Only the channels' names are printed.
+KEYS=''
+for channel in ci dev flathub; do
+    name=CHILPA_SERVICE_KEY_$(printf '%s' "$channel" | tr '[:lower:]' '[:upper:]')
+    value=$(value_of "$name")
+    if [ -z "$value" ]; then
+        continue
+    fi
+    if ! printf '%s' "$value" | LC_ALL=C grep -Eq '^[0-9a-fA-F]{64}$'; then
+        echo "$name does not look right (expected 64 hex characters); check it in the file" >&2
+        exit 1
+    fi
+    KEYS="$KEYS $channel"
+done
+if [ -n "$KEYS" ]; then
+    echo "SERVICE_KEYS: looks right, channels$KEYS"
+else
+    echo "SERVICE_KEYS: no CHILPA_SERVICE_KEY_* line, skipped"
+fi
+
 cd "$HERE/.."
 for name in $LOAD; do
     value_of "$name" | tr -d '\n' | npx wrangler secret put "$name"
 done
+
+if [ -n "$KEYS" ]; then
+    for channel in $KEYS; do
+        name=CHILPA_SERVICE_KEY_$(printf '%s' "$channel" | tr '[:lower:]' '[:upper:]')
+        printf '%s:%s ' "$channel" "$(value_of "$name")"
+    done | sed 's/ $//' | tr -d '\n' | npx wrangler secret put SERVICE_KEYS
+fi

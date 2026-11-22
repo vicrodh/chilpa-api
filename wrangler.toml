@@ -22,6 +22,13 @@ preview_urls = false
 # - SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
 # - TIDAL_CLIENT_ID, TIDAL_CLIENT_SECRET
 # - PODCASTINDEX_KEY, PODCASTINDEX_SECRET
+# - SERVICE_KEYS, the keys Chilpa's builds sign with (src/signature.ts), made
+#   from CHILPA_SERVICE_KEY_CI, _DEV and _FLATHUB
 # scripts/put-secrets.sh loads them from that file without printing them;
 # `npx wrangler secret put NAME` does one by hand. A provider without its
 # secrets answers 503.
+
+# Variables:
+# - UNSIGNED_UNTIL: an ISO date such as "2026-12-31". From then on a request
+#   no key in SERVICE_KEYS signed gets 403; unset, it is answered as before.
+#   Set it under [vars] here and deploy.

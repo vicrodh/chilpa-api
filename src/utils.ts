@@ -79,11 +79,12 @@ export function rateLimit(request: Request): { allowed: true } | { allowed: fals
  * One line per request for `wrangler tail`. No IP: the method and the
  * country are enough to follow a problem.
  */
-export function logRequest(request: Request): void {
+export function logRequest(request: Request, signed: string): void {
   console.log(JSON.stringify({
     method: request.method,
     path: new URL(request.url).pathname,
     userAgent: request.headers.get('User-Agent'),
+    signed,
     country: request.headers.get('CF-IPCountry')
   }));
 }
