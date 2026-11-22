@@ -24,7 +24,8 @@ const SIGNATURE_HEADER = 'X-Chilpa-Signature';
 /** What a build without a valid signature is told once unsigned requests are refused. */
 export const REFUSAL = {
   error: 'This service answers official Chilpa builds only',
-  detail: 'Requests must be signed by a Chilpa build made with its key. A fork or a build of your own can run its own service and point to it.'
+  detail: 'Requests must be signed by a Chilpa build made with its key. A fork or a build of your own can run its own service and point to it.',
+  see: 'https://github.com/vicrodh/chilpa-api#forks'
 };
 
 interface Key { name: string; key: CryptoKey }

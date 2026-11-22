@@ -29,8 +29,16 @@ can sign by the worker's clock. The `UNSIGNED_UNTIL` variable, an ISO date,
 sets when unsigned requests start getting 403; without it they are answered
 as before. A key travels inside every binary that carries it, so this is not
 authentication either: it keeps copies of Chilpa's source from using this
-worker by default. A fork or a build of your own can deploy this worker
-with its own applications and keys and point to it.
+worker by default.
+
+## Forks
+
+If you maintain a fork of Chilpa or ship builds of your own, please deploy
+your own copy of this worker, with your own applications' keys, and point
+your build to it; Cloudflare's free plan is enough for it. `api.chilpa.app`
+and `lyrics.chilpa.app` are for official Chilpa builds, and from a set date
+they refuse requests without a valid signature. Their addresses appear in
+Chilpa's source as `api.chilpa.app` and `lyrics.chilpa.app`; search for both.
 
 ## Last.fm
 
